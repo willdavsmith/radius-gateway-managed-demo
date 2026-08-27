@@ -20,7 +20,7 @@ resource registryCreds 'Radius.Security/secrets@2025-08-01-preview' = {
   properties: {
     environment: environment
     application: gatewayManagedDemoApp.id
-    codeReference: '.radius/app.bicep'
+    codeReference: '.github/workflows/run-rad-commands-azure.yml#L356'
     data: {
       password: {
         value: registryPassword
@@ -32,14 +32,14 @@ resource registryCreds 'Radius.Security/secrets@2025-08-01-preview' = {
   }
 }
 
-resource webImage 'Radius.Compute/containerImages@2025-08-01-preview' = {
-  name: 'web-image'
+resource gatewayManagedDemoImage 'Radius.Compute/containerImages@2025-08-01-preview' = {
+  name: 'gateway-managed-demo-image'
   properties: {
     environment: environment
     application: gatewayManagedDemoApp.id
-    codeReference: 'Dockerfile'
+    codeReference: 'Dockerfile#L1'
     build: {
-      source: 'git::https://github.com/willdavsmith/radius-gateway-managed-demo.git?ref=c1cd1bda9afbb1a6cd8ac8191827d381dc4cca35'
+      source: 'git::https://github.com/willdavsmith/radius-gateway-managed-demo.git?ref=ef3b6df3368b8c576d154d50fc312f0db1676c60'
     }
   }
   dependsOn: [
@@ -47,15 +47,15 @@ resource webImage 'Radius.Compute/containerImages@2025-08-01-preview' = {
   ]
 }
 
-resource webContainer 'Radius.Compute/containers@2025-08-01-preview' = {
-  name: 'web'
+resource gatewayManagedDemoContainer 'Radius.Compute/containers@2025-08-01-preview' = {
+  name: 'gateway-managed-demo'
   properties: {
     environment: environment
     application: gatewayManagedDemoApp.id
-    codeReference: 'index.html'
+    codeReference: '.radius/app.bicep#L50'
     containers: {
-      web: {
-        image: webImage.properties.imageReference
+      gatewayManagedDemo: {
+        image: gatewayManagedDemoImage.properties.imageReference
         ports: {
           web: {
             containerPort: 80
@@ -66,12 +66,12 @@ resource webContainer 'Radius.Compute/containers@2025-08-01-preview' = {
   }
 }
 
-resource webRoute 'Radius.Compute/routes@2025-08-01-preview' = {
-  name: 'web'
+resource gatewayManagedDemoRoute 'Radius.Compute/routes@2025-08-01-preview' = {
+  name: 'gateway-managed-demo'
   properties: {
     environment: environment
     application: gatewayManagedDemoApp.id
-    codeReference: '.radius/app.bicep'
+    codeReference: 'README.md#L3'
     kind: 'HTTP'
     rules: [
       {
@@ -81,8 +81,8 @@ resource webRoute 'Radius.Compute/routes@2025-08-01-preview' = {
           }
         ]
         destinationContainer: {
-          resourceId: webContainer.id
-          containerName: 'web'
+          resourceId: gatewayManagedDemoContainer.id
+          containerName: 'gatewayManagedDemo'
           containerPort: 80
         }
       }
