@@ -135,7 +135,7 @@ case "${ACTION}" in
         delete_environment_variable RADIUS_ROUTES_GATEWAY_NAMESPACE
         delete_environment_variable RADIUS_ROUTES_EXPOSURE
         verify_clean
-        echo "ready: deploy .radius/app.bicep from the Copilot Radius canvas"
+        echo "ready: trigger run-rad-commands.yml for GitHub Environment ${ENVIRONMENT}"
         ;;
     verify)
         require_tools
