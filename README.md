@@ -10,7 +10,15 @@ The repository expects a Radius Azure GitHub Environment named `azure` that targ
 ./setup.sh setup
 ```
 
-Open the repository in the GitHub Copilot app and deploy the root `.radius/app.bicep` with environment `azure`.
+Until `radius-project/radius#12854` merges, do not use the Radius canvas Deploy button: the current canvas regenerates the provider workflow from `main` and removes the feature-under-test. Trigger the already-pinned workflow directly:
+
+```shell
+gh workflow run run-rad-commands.yml \
+  --repo willdavsmith/radius-gateway-managed-demo \
+  -f environment=azure
+```
+
+Follow the run in GitHub Actions or with `gh run watch`.
 
 ```shell
 ./setup.sh verify
@@ -21,9 +29,14 @@ kubectl get service -n radius-system -l app.kubernetes.io/component=envoy
 
 Expected result: GatewayClass `contour` is accepted, Gateway `radius-system/radius` is programmed, the Envoy Service is `ClusterIP`, and the application HTTPRoute is accepted.
 
-Delete `gateway-managed-demo` in the Radius canvas, wait for the delete workflow, then run:
+Trigger the pinned delete workflow directly, wait for it to finish, then run:
 
 ```shell
+gh workflow run delete-application.yml \
+  --repo willdavsmith/radius-gateway-managed-demo \
+  -f environment=azure \
+  -f application=gateway-managed-demo
+
 ./setup.sh teardown
 ```
 

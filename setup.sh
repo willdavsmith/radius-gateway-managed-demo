@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ -z "${BASH_VERSION:-}" ] || shopt -oq posix 2>/dev/null; then
+    echo "error: run this script as ./setup.sh or bash setup.sh, not sh setup.sh" >&2
+    exit 2
+fi
+
 set -euo pipefail
 
 readonly REPO="${DEMO_REPO:-willdavsmith/radius-gateway-managed-demo}"
@@ -86,7 +91,10 @@ verify_http_route() {
 }
 
 verify_deployed() {
-    helm status contour -n radius-system >/dev/null
+    helm status contour -n radius-system >/dev/null 2>&1 || {
+        echo "error: managed Contour release was not deployed" >&2
+        exit 1
+    }
     kubectl get gatewayclass contour >/dev/null
     kubectl wait --for=condition=Accepted gatewayclass/contour --timeout=2m
     kubectl get gateway radius -n radius-system >/dev/null

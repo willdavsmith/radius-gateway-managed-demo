@@ -32,6 +32,10 @@ permissions:
   contents: write
   packages: write
 
+concurrency:
+  group: radius-environment-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
 env:
   ENVIRONMENT: ${{ inputs.environment }}
 
@@ -51,6 +55,7 @@ jobs:
       RADIUS_STATE_BACKEND: ${{ vars.RADIUS_STATE_BACKEND }}
       RADIUS_STATE_REGISTRY: ${{ vars.RADIUS_STATE_REGISTRY }}
       RADIUS_STATE_ARCHIVE: ${{ vars.RADIUS_STATE_ARCHIVE }}
+      RADIUS_TARGET_KUBECONFIG: ${{ vars.AZURE_AKS_CLUSTER_NAME != '' && format('{0}/.radius-target-kubeconfig', github.workspace) || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
@@ -80,8 +85,11 @@ jobs:
 
       - name: Get target cluster kubeconfig
         run: |
-          mkdir -p "$HOME/.kube"
-          echo "RADIUS_TARGET_KUBECONFIG=$HOME/.kube/target-cluster" >> "$GITHUB_ENV"
+          if [ -z "$RADIUS_TARGET_KUBECONFIG" ]; then
+            echo "No external AKS cluster configured; using the control-plane cluster."
+            exit 0
+          fi
+          mkdir -p "$(dirname "$RADIUS_TARGET_KUBECONFIG")"
 
       - name: Connect to AKS cluster
         if: ${{ vars.AZURE_AKS_CLUSTER_NAME != '' }}
@@ -93,7 +101,7 @@ jobs:
             --file "$RADIUS_TARGET_KUBECONFIG"
 
       - name: Set up control plane
-        uses: radius-project/radius/.github/extension/actions/setup-control-plane@main
+        uses: radius-project/radius/.github/extension/actions/setup-control-plane@000e3749e3b072b75eb6a46ae171688e417bfb5c
 
       - name: Project cloud OIDC tokens into Radius pods
         run: |
@@ -150,8 +158,7 @@ jobs:
           echo "External deployment target configured."
 
       - name: Restore Radius state
-        id: restore-state
-        uses: radius-project/radius/.github/extension/actions/restore-state@main
+        uses: radius-project/radius/.github/extension/actions/restore-state@000e3749e3b072b75eb6a46ae171688e417bfb5c
         with:
           namespace: ${{ vars.KUBERNETES_NAMESPACE || 'default' }}
 
@@ -168,14 +175,25 @@ jobs:
           echo "✅ Cloud credentials registered with Radius."
 
       - name: Delete Radius resource
-        uses: radius-project/radius/.github/extension/actions/delete-resource@main
+        uses: radius-project/radius/.github/extension/actions/delete-resource@000e3749e3b072b75eb6a46ae171688e417bfb5c
         with:
           resource-type: ${{ inputs.resource_type }}
           name: ${{ inputs.name }}
           azure-oidc-token-refresh: "${{ vars.AZURE_CLIENT_ID != '' }}"
 
+      - name: Clean up unused routes Gateway infrastructure
+        if: ${{ inputs.resource_type == 'application' }}
+        uses: radius-project/radius/.github/extension/actions/manage-routes-gateway@000e3749e3b072b75eb6a46ae171688e417bfb5c
+        with:
+          mode: cleanup
+          target-kubeconfig: ${{ env.RADIUS_TARGET_KUBECONFIG }}
+          environment-name: ${{ inputs.environment }}
+          application-name: ${{ inputs.name }}
+          gateway-name: ${{ vars.RADIUS_ROUTES_GATEWAY_NAME }}
+          gateway-namespace: ${{ vars.RADIUS_ROUTES_GATEWAY_NAMESPACE }}
+          gateway-explicit: "${{ vars.RADIUS_ROUTES_GATEWAY_NAME != '' }}"
+          exposure: ${{ vars.RADIUS_ROUTES_EXPOSURE }}
+
       - name: Teardown
         if: always()
-        uses: radius-project/radius/.github/extension/actions/teardown@main
-        with:
-          state-restored: ${{ steps.restore-state.outputs.state-restored }}
+        uses: radius-project/radius/.github/extension/actions/teardown@000e3749e3b072b75eb6a46ae171688e417bfb5c
