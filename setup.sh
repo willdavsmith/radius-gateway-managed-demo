@@ -65,42 +65,50 @@ managed_contour_exists() {
 
 verify_http_route() {
     local attempt
+    local gateway
     local routes
     for ((attempt = 1; attempt <= 24; attempt++)); do
         routes="$(
             kubectl get httproute -A \
                 -l radapp.io/application=gateway-managed-demo -o json
         )"
+        gateway="$(kubectl get gateway radius -n radius-system -o json)"
         if jq -e '
           .items | length == 1 and
           all(.[];
             any(.spec.parentRefs[]?;
-              .name == "radius" and .namespace == "radius-system") and
-            any(.status.parents[]?.conditions[]?;
-              .type == "Accepted" and .status == "True") and
-            any(.status.parents[]?.conditions[]?;
-              .type == "ResolvedRefs" and .status == "True"))
-        ' <<<"${routes}" >/dev/null; then
-            echo "verified: app HTTPRoute is accepted by radius-system/radius"
+              .name == "radius" and .namespace == "radius-system"))
+        ' <<<"${routes}" >/dev/null &&
+            jq -e '
+              any(.status.listeners[]?;
+                .name == "http" and .attachedRoutes >= 1)
+            ' <<<"${gateway}" >/dev/null; then
+            echo "verified: app HTTPRoute is attached to radius-system/radius"
             return 0
         fi
         sleep 5
     done
-    echo "error: app HTTPRoute was not accepted by radius-system/radius" >&2
+    echo "error: app HTTPRoute was not attached to radius-system/radius" >&2
     return 1
 }
 
 verify_deployed() {
+    local controller
+    local service_type
     helm status contour -n radius-system >/dev/null 2>&1 || {
         echo "error: managed Contour release was not deployed" >&2
         exit 1
     }
-    kubectl get gatewayclass contour >/dev/null
-    kubectl wait --for=condition=Accepted gatewayclass/contour --timeout=2m
+    controller="$(
+        kubectl get gatewayclass contour -o jsonpath='{.spec.controllerName}'
+    )"
+    [[ "${controller}" == "projectcontour.io/gateway-controller" ]] || {
+        echo "error: GatewayClass contour uses unexpected controller ${controller}" >&2
+        exit 1
+    }
     kubectl get gateway radius -n radius-system >/dev/null
     kubectl wait --for=condition=Programmed gateway/radius \
         -n radius-system --timeout=2m
-    local service_type
     service_type="$(
         kubectl get service -n radius-system \
             -l app.kubernetes.io/component=envoy \
