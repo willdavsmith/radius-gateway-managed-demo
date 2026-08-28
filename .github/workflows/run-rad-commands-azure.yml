@@ -315,11 +315,11 @@ jobs:
             exit 1
           fi
 
-          # The default routes recipe always receives a concrete Gateway reference.
-          # A separately-passed boolean tells the lifecycle action whether this is a
-          # user-owned Gateway or the Radius-managed default.
-          ROUTES_GATEWAY_NAME="${{ vars.RADIUS_ROUTES_GATEWAY_NAME || 'radius' }}"
-          ROUTES_GATEWAY_NAMESPACE="${{ vars.RADIUS_ROUTES_GATEWAY_NAMESPACE || 'radius-system' }}"
+          # routesGatewayName is a required pack parameter, but it only matters when
+          # a Radius.Compute/routes resource is actually deployed. Default to empty
+          # unless the repo configures an existing Kubernetes Gateway.
+          ROUTES_GATEWAY_NAME="${{ vars.RADIUS_ROUTES_GATEWAY_NAME }}"
+          ROUTES_GATEWAY_NAMESPACE="${{ vars.RADIUS_ROUTES_GATEWAY_NAMESPACE || 'default' }}"
 
           echo "Recipe pack file:"
           cat "$ENV_BICEP"
@@ -341,18 +341,6 @@ jobs:
         with:
           environment: ${{ inputs.environment }}
           app-file: ${{ env.APP_FILE }}
-
-      - name: Ensure routes Gateway infrastructure
-        uses: radius-project/radius/.github/extension/actions/manage-routes-gateway@d44caa65732e63f7a3ff6a97e8f2f420d6f781bb
-        with:
-          mode: ensure
-          target-kubeconfig: ${{ env.RADIUS_TARGET_KUBECONFIG }}
-          environment-name: ${{ inputs.environment }}
-          app-file: ${{ env.APP_FILE }}
-          gateway-name: ${{ vars.RADIUS_ROUTES_GATEWAY_NAME }}
-          gateway-namespace: ${{ vars.RADIUS_ROUTES_GATEWAY_NAMESPACE }}
-          gateway-explicit: "${{ vars.RADIUS_ROUTES_GATEWAY_NAME != '' }}"
-          exposure: ${{ vars.RADIUS_ROUTES_EXPOSURE }}
 
       - name: Prepare live deployment progress
         uses: radius-project/radius/.github/extension/actions/deploy-progress/artifact-uploader@main
