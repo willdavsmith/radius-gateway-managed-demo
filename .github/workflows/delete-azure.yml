@@ -7,7 +7,7 @@
 # plane, connects to the user's AKS cluster, restores persisted state, deletes the
 # requested resource (running any recipe deletes against the target cluster), then
 # persists the updated state again and tears the control plane down. The provider-
-# agnostic phases are shared composite actions in radius-project/radius; only the
+# agnostic phases are shared composite actions in radius-project/ai-extensions; only the
 # Azure-specific steps live here.
 name: Radius - Delete (Azure)
 
@@ -93,7 +93,7 @@ jobs:
             --file "$RADIUS_TARGET_KUBECONFIG"
 
       - name: Set up control plane
-        uses: radius-project/radius/.github/extension/actions/setup-control-plane@main
+        uses: radius-project/ai-extensions/.github/extension/actions/setup-control-plane@0b12c9ed2531d3be4c2ffa18c4b1e6b237b1407c
 
       - name: Project cloud OIDC tokens into Radius pods
         run: |
@@ -151,7 +151,7 @@ jobs:
 
       - name: Restore Radius state
         id: restore-state
-        uses: radius-project/radius/.github/extension/actions/restore-state@main
+        uses: radius-project/ai-extensions/.github/extension/actions/restore-state@0b12c9ed2531d3be4c2ffa18c4b1e6b237b1407c
         with:
           namespace: ${{ vars.KUBERNETES_NAMESPACE || 'default' }}
 
@@ -168,7 +168,7 @@ jobs:
           echo "✅ Cloud credentials registered with Radius."
 
       - name: Delete Radius resource
-        uses: radius-project/radius/.github/extension/actions/delete-resource@main
+        uses: radius-project/ai-extensions/.github/extension/actions/delete-resource@0b12c9ed2531d3be4c2ffa18c4b1e6b237b1407c
         with:
           resource-type: ${{ inputs.resource_type }}
           name: ${{ inputs.name }}
@@ -189,6 +189,6 @@ jobs:
 
       - name: Teardown
         if: always()
-        uses: radius-project/radius/.github/extension/actions/teardown@main
+        uses: radius-project/ai-extensions/.github/extension/actions/teardown@0b12c9ed2531d3be4c2ffa18c4b1e6b237b1407c
         with:
           state-restored: ${{ steps.restore-state.outputs.state-restored }}
