@@ -39,7 +39,7 @@ resource webImage 'Radius.Compute/containerImages@2025-08-01-preview' = {
     application: gatewayManagedDemoApp.id
     codeReference: 'Dockerfile'
     build: {
-      source: 'git::https://github.com/willdavsmith/radius-gateway-managed-demo.git?ref=c1cd1bda9afbb1a6cd8ac8191827d381dc4cca35'
+      source: 'git::https://github.com/willdavsmith/radius-gateway-managed-demo.git?ref=e51c4b64d044748756903b8239b653b644502a2a'
     }
   }
   dependsOn: [
@@ -71,7 +71,7 @@ resource webRoute 'Radius.Compute/routes@2025-08-01-preview' = {
   properties: {
     environment: environment
     application: gatewayManagedDemoApp.id
-    codeReference: '.radius/app.bicep'
+    codeReference: 'setup.sh#L66'
     kind: 'HTTP'
     rules: [
       {
