@@ -10,7 +10,7 @@ The repository expects a Radius Azure GitHub Environment named `azure` that targ
 ./setup.sh setup
 ```
 
-Until `radius-project/radius#12854` merges, do not use the Radius canvas Deploy button: the current canvas regenerates the provider workflow from `main` and removes the feature-under-test. Trigger the already-pinned workflow directly:
+Until [radius-project/ai-extensions#672](https://github.com/radius-project/ai-extensions/pull/672) merges, do not use the Radius canvas Deploy or Delete buttons: generated workflows use released or `main` templates and do not include the feature under test. Trigger the already-pinned workflows directly:
 
 ```shell
 gh workflow run run-rad-commands.yml \
@@ -57,4 +57,4 @@ Run the demo-only workaround:
 
 Set `DEMO_ENVIRONMENT`, `DEMO_REPO`, or `DEMO_WORKFLOW_REF` to override `azure`, `willdavsmith/radius-gateway-managed-demo`, or `cleanup-verification`.
 
-Until `radius-project/radius#12854` merges, the workflows use hybrid action pins: stable extension actions come from `radius-project/ai-extensions@0b12c9ed2531d3be4c2ffa18c4b1e6b237b1407c`, while the pre-merge `manage-routes-gateway` action remains at `radius-project/radius@3aa81af42ae9a0f7d8413c6b3f6dc88c4a326726`. Workflow commands must use `--ref cleanup-verification`.
+Until PR #672 merges, all first-party extension actions are pinned to its source commit, `radius-project/ai-extensions@246f09f3b6313c705fb38d5ae7276356a5c9aba8`. Workflow commands must use `--ref cleanup-verification`.
